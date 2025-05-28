@@ -5,6 +5,61 @@ import mediapipe as mp
 import numpy as np
 import pygame
 from pygame.locals import *
+import random
+
+
+class AudioManager:
+    def __init__(self):
+        """Handle audio playback for the game"""
+        # Initialize audio
+        pygame.mixer.init()
+        
+        # Load audio files
+        self.song = pygame.mixer.Sound('assets/sound/song.mp3')
+        self.win_sound = pygame.mixer.Sound('assets/sound/win.mp3')
+        
+        # Audio state tracking
+        self.is_playing = False
+        self.plays_count = 0
+        self.max_plays = 0
+        self.reset()
+    
+    def reset(self):
+        """Reset audio manager state"""
+        self.stop_music()
+        self.plays_count = 0
+        self.max_plays = random.randint(2, 4)  # Random between 2-4 plays
+        self.is_playing = False
+    
+    def start_music(self):
+        """Start playing the song"""
+        self.song.play()
+        self.is_playing = True
+        
+    def stop_music(self):
+        """Stop the song"""
+        self.song.stop()
+        self.is_playing = False
+    
+    def play_win_sound(self):
+        """Play the win sound"""
+        self.stop_music()  # Stop any currently playing music
+        self.win_sound.play()
+    
+    def check_music_status(self):
+        """Check if music is still playing, handle play count"""
+        if self.is_playing and not pygame.mixer.get_busy():
+            # Music just stopped
+            self.is_playing = False
+            self.plays_count += 1
+            print(f"Song play #{self.plays_count} of {self.max_plays} completed")
+            return True  # Music just stopped
+        return False  # No change in music status
+    
+    def should_continue_playing(self):
+        """Determine if we should play the song again"""
+        return self.plays_count < self.max_plays
+
 
 class EyelightGame:
     def __init__(self):
@@ -14,7 +69,7 @@ class EyelightGame:
         pygame.display.set_caption("Eyelight Game")
         
         # Screen setup
-        self.screen_width = 1280
+        self.screen_width = 1080
         self.screen_height = 720
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         self.clock = pygame.time.Clock()
@@ -50,20 +105,30 @@ class EyelightGame:
         self.STATES = {
             'WAITING': 0,
             'GREEN_LIGHT': 1,
-            'RED_LIGHT': 2,
-            'GAME_OVER': 3
+            'GRACE_PERIOD': 2,
+            'RED_LIGHT': 3,
+            'GAME_OVER': 4,
+            'WIN': 5
         }
         self.current_state = self.STATES['WAITING']
         self.state_start_time = time.time()
         
         # Game timing settings (in seconds)
-        self.green_light_duration = 5.0  # Green light duration
+        self.green_light_duration = 5.0  # Green light duration (will be overridden by music)
         self.red_light_duration = 3.0    # Red light duration
         self.countdown_duration = 3.0    # Initial countdown duration
+        self.grace_period_duration = 1.0  # Grace period after music stops
         
-        # Violation tracking
-        self.violations = 0
-        self.max_violations = 3
+        # Audio setup
+        self.audio_manager = AudioManager()
+          # Player progress
+        self.player_position = 0
+        self.finish_line = 1000  # Target position to win (increased for longer gameplay)
+        self.movement_speed = 0.5  # How fast player moves when eyes are open (reduced for better control)
+        
+        # Background image
+        self.background = pygame.image.load('assets/image/background.png')
+        self.background = pygame.transform.scale(self.background, (self.screen_width, self.screen_height))
         
         # Game running flag
         self.running = True
@@ -177,9 +242,9 @@ class EyelightGame:
             if value == state:
                 return name
         return "UNKNOWN"
-        
+    
     def update_game_state(self, current_time):
-        """Update game state based on timers"""
+        """Update game state based on timers and music status"""
         # Get time elapsed since the current state started
         elapsed_time = current_time - self.state_start_time
         
@@ -188,10 +253,19 @@ class EyelightGame:
             if elapsed_time >= self.countdown_duration:
                 self.current_state = self.STATES['GREEN_LIGHT']
                 self.state_start_time = current_time
+                # Start playing music when transitioning to GREEN_LIGHT
+                self.audio_manager.start_music()
                 
         elif self.current_state == self.STATES['GREEN_LIGHT']:
-            # In green light state, switch to red light after duration
-            if elapsed_time >= self.green_light_duration:
+            # Check if music has stopped
+            if self.audio_manager.check_music_status():
+                # Music stopped, enter grace period
+                self.current_state = self.STATES['GRACE_PERIOD']
+                self.state_start_time = current_time
+                
+        elif self.current_state == self.STATES['GRACE_PERIOD']:
+            # Grace period after music stops
+            if elapsed_time >= self.grace_period_duration:
                 self.current_state = self.STATES['RED_LIGHT']
                 self.state_start_time = current_time
                 
@@ -200,30 +274,63 @@ class EyelightGame:
             if elapsed_time >= self.red_light_duration:
                 self.current_state = self.STATES['GREEN_LIGHT']
                 self.state_start_time = current_time
-                
+                # Start next music play if we should continue
+                if self.audio_manager.should_continue_playing():
+                    self.audio_manager.start_music()
+                else:
+                    # If we've played enough times, reset the audio manager
+                    # to generate a new random number of plays
+                    self.audio_manager.reset()
+                    self.audio_manager.start_music()
+    
     def check_violations(self, eyes_open):
         """Check for rule violations based on game state"""
         # During red light, having eyes open is a violation
         if self.current_state == self.STATES['RED_LIGHT'] and eyes_open:
-            self.violations += 1
-            print(f"Violation detected! Total: {self.violations}/{self.max_violations}")
-            
-            if self.violations >= self.max_violations:
-                self.current_state = self.STATES['GAME_OVER']
+            print("Violation detected! Eyes open during red light.")
+            self.current_state = self.STATES['GAME_OVER']
             return True
         return False
-        
+    
+    def check_win_condition(self):
+        """Check if player has reached the finish line"""
+        if self.player_position >= self.finish_line:
+            print("Player reached the finish line! VICTORY!")
+            self.current_state = self.STATES['WIN']
+            self.audio_manager.play_win_sound()
+            return True
+        return False
+    
+    def update_player_position(self, eyes_open):
+        """Update player position based on eye state"""
+        # Move forward if eyes are open during GREEN_LIGHT
+        if self.current_state == self.STATES['GREEN_LIGHT'] and eyes_open:
+            self.player_position += self.movement_speed
+            # Cap player position at finish line
+            self.player_position = min(self.player_position, self.finish_line)
+    
     def draw_game_elements(self, webcam_surface=None, eyes_open=False, left_ear=0, right_ear=0):
         """Draw all game elements on the Pygame screen"""
-        # Fill the background
-        self.screen.fill((0, 0, 0))  # Black background
+        # Draw the background image first
+        self.screen.blit(self.background, (0, 0))
         
-        # Draw webcam feed if available
+        # Draw webcam feed with some transparency
         if webcam_surface is not None:
-            # Scale and position the webcam feed to fill most of the screen
-            webcam_surface = pygame.transform.scale(webcam_surface, 
-                                                   (self.screen_width, self.screen_height))
-            self.screen.blit(webcam_surface, (0, 0))
+            # Scale the webcam feed to a smaller size and position it in a corner
+            webcam_width = self.screen_width // 3
+            webcam_height = self.screen_height // 3
+            webcam_surface = pygame.transform.scale(webcam_surface, (webcam_width, webcam_height))
+            
+            # Create a transparent surface
+            webcam_alpha = pygame.Surface((webcam_width, webcam_height), pygame.SRCALPHA)
+            webcam_alpha.fill((255, 255, 255, 150))  # Semi-transparent white
+            
+            # Apply transparency and blit to screen
+            webcam_surface.blit(webcam_alpha, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+            self.screen.blit(webcam_surface, (self.screen_width - webcam_width - 10, 10))
+        
+        # Draw player and progress
+        self.draw_player_and_progress()
         
         # Eye metrics display
         eye_metrics = f"Left EAR: {left_ear:.2f}, Right EAR: {right_ear:.2f}"
@@ -236,16 +343,44 @@ class EyelightGame:
         eye_state_text = self.font_medium.render(eye_state, True, eye_state_color)
         self.screen.blit(eye_state_text, (10, 10))
         
-        # Show violations
-        violation_text = f"Violations: {self.violations}/{self.max_violations}"
-        violation_surface = self.font_medium.render(violation_text, True, (255, 0, 0))
-        self.screen.blit(violation_surface, (10, 90))
-        
         # Draw game state overlay
         self.draw_game_state_overlay(eyes_open)
         
         # Update the display
         pygame.display.flip()
+    
+    def draw_player_and_progress(self):
+        """Draw the player character and progress bar"""
+        # Calculate player's visual position based on their progress
+        progress_percent = self.player_position / self.finish_line
+        
+        # Progress bar dimensions and position
+        bar_width = self.screen_width - 100
+        bar_height = 20
+        bar_x = 50
+        bar_y = self.screen_height - 50
+        
+        # Draw the empty progress bar
+        pygame.draw.rect(self.screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height))
+        
+        # Draw the filled portion of the progress bar
+        filled_width = int(bar_width * progress_percent)
+        pygame.draw.rect(self.screen, (0, 255, 0), (bar_x, bar_y, filled_width, bar_height))
+        
+        # Draw a border around the progress bar
+        pygame.draw.rect(self.screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
+        
+        # Draw the player character
+        player_x = int(bar_x + (bar_width * progress_percent) - 10)
+        player_y = bar_y - 40
+        
+        # Simple player character (a circle with eyes)
+        pygame.draw.circle(self.screen, (255, 255, 0), (player_x, player_y), 20)
+        
+        # Add percentage text above the progress bar
+        percent_text = f"{int(progress_percent * 100)}%"
+        text_surf = self.font_medium.render(percent_text, True, (255, 255, 255))
+        self.screen.blit(text_surf, (bar_x + bar_width // 2 - text_surf.get_width() // 2, bar_y - 30))
         
     def draw_game_state_overlay(self, eyes_open):
         """Draw game state information and overlays"""
@@ -283,17 +418,43 @@ class EyelightGame:
             text_surface = self.font_medium.render(instruction_text, True, (200, 255, 200))
             self.screen.blit(text_surface, (20, 200))
             
-            # Timer display
+            # Show music is playing indicator
+            if self.audio_manager.is_playing:
+                music_text = "♪ Music Playing ♪"
+                music_surface = self.font_medium.render(music_text, True, (0, 255, 255))
+                self.screen.blit(music_surface, (20, 250))
+            
+        elif self.current_state == self.STATES['GRACE_PERIOD']:
+            # Grace period state
+            state_text = "MUSIC STOPPED!"
+            instruction_text = "Close your eyes NOW! (1 second grace period)"
+            
+            # Semi-transparent yellow overlay
+            overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+            overlay.fill((255, 255, 0, 100))  # Yellow with alpha
+            self.screen.blit(overlay, (0, 0))
+            
+            # Display state and timer
+            text_surface = self.font_large.render(state_text, True, (255, 255, 0))
+            self.screen.blit(text_surface, (self.screen_width // 2 - text_surface.get_width() // 2, 
+                                           self.screen_height // 3))
+            
+            text_surface = self.font_medium.render(instruction_text, True, (255, 255, 0))
+            self.screen.blit(text_surface, (self.screen_width // 2 - text_surface.get_width() // 2, 
+                                           self.screen_height // 3 + 60))
+            
+            # Display grace period countdown
             elapsed_time = time.time() - self.state_start_time
-            remaining = max(0, self.green_light_duration - elapsed_time)
-            timer_text = f"Time: {remaining:.1f}s"
-            timer_surface = self.font_medium.render(timer_text, True, (0, 255, 0))
-            self.screen.blit(timer_surface, (20, 250))
+            remaining = max(0, self.grace_period_duration - elapsed_time)
+            timer_text = f"Time remaining: {remaining:.1f}s"
+            timer_surface = self.font_medium.render(timer_text, True, (255, 255, 0))
+            self.screen.blit(timer_surface, (self.screen_width // 2 - timer_surface.get_width() // 2, 
+                                            self.screen_height // 3 + 120))
             
         elif self.current_state == self.STATES['RED_LIGHT']:
             # Red light state
             state_text = "RED LIGHT!"
-            instruction_text = "(Close your eyes to freeze)"
+            instruction_text = "(Keep your eyes closed!)"
             
             # Semi-transparent red overlay if eyes are open (violation)
             if eyes_open:
@@ -332,12 +493,31 @@ class EyelightGame:
             instructions_text = self.font_medium.render(instructions, True, (255, 255, 255))
             self.screen.blit(instructions_text, (self.screen_width // 2 - instructions_text.get_width() // 2, 
                                                 self.screen_height // 2 + 50))
+                                                
+        elif self.current_state == self.STATES['WIN']:
+            # Win state
+            overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+            overlay.fill((0, 100, 0, 180))  # Green with alpha
+            self.screen.blit(overlay, (0, 0))
+            
+            # Display win text
+            state_text = "YOU WIN!"
+            text_surface = self.font_large.render(state_text, True, (0, 255, 0))
+            self.screen.blit(text_surface, (self.screen_width // 2 - text_surface.get_width() // 2, 
+                                           self.screen_height // 2 - text_surface.get_height() // 2 - 50))
+            
+            # Display restart instructions
+            instructions = "Press SPACE to play again"
+            instructions_text = self.font_medium.render(instructions, True, (255, 255, 255))
+            self.screen.blit(instructions_text, (self.screen_width // 2 - instructions_text.get_width() // 2, 
+                                                self.screen_height // 2 + 50))
     
     def reset_game(self):
         """Reset the game to initial state"""
         self.current_state = self.STATES['WAITING']
         self.state_start_time = time.time()
-        self.violations = 0
+        self.player_position = 0
+        self.audio_manager.reset()
         print("Game reset!")
     
     def run(self):
@@ -353,7 +533,8 @@ class EyelightGame:
                 elif event.type == KEYDOWN:
                     if event.key == K_ESCAPE:
                         self.running = False
-                    elif event.key == K_SPACE and self.current_state == self.STATES['GAME_OVER']:
+                    elif event.key == K_SPACE and (self.current_state == self.STATES['GAME_OVER'] or 
+                                                   self.current_state == self.STATES['WIN']):
                         self.reset_game()
             
             # Get current time for state management
@@ -364,10 +545,17 @@ class EyelightGame:
             
             # Update game state based on timers
             self.update_game_state(current_time)
-            
-            # Check for violations
-            if self.current_state not in [self.STATES['WAITING'], self.STATES['GAME_OVER']]:
-                self.check_violations(eyes_open)
+              # Update player position (only if not in WIN or GAME_OVER state)
+            if self.current_state not in [self.STATES['GAME_OVER'], self.STATES['WIN']]:
+                self.update_player_position(eyes_open)
+                
+                # Check for win condition (only if we're not already in WIN state)
+                if self.current_state != self.STATES['WIN'] and self.check_win_condition():
+                    # Player has won, no need to check violations
+                    pass
+                # Check for violations (only if not in special states)
+                elif self.current_state not in [self.STATES['WAITING'], self.STATES['GAME_OVER'], self.STATES['WIN']]:
+                    self.check_violations(eyes_open)
             
             # Draw game elements
             self.draw_game_elements(webcam_surface, eyes_open, left_ear, right_ear)
