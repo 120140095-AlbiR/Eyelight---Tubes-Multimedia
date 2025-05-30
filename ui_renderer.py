@@ -1,4 +1,3 @@
-# filepath: c:\Users\4lb17\Documents\buat kuliah\Sistem teknologi multimedia\tubes\Eyelight test 1\ui_renderer.py
 import pygame
 import time
 
@@ -13,12 +12,128 @@ class UIRenderer:
         self.font_small = pygame.font.Font(None, 24)
         
         # Memuat gambar latar belakang
-        self.background = pygame.image.load('assets/image/background.png')
+        self.original_background = pygame.image.load('assets/image/background.png')
         screen_size = screen.get_size()
-        self.background = pygame.transform.scale(self.background, screen_size)
+        self.background = pygame.transform.scale(self.original_background, screen_size)
         
+        # Memuat logo untuk menu
+        self.logo = pygame.image.load('assets/image/logo.png')
+        logo_width = int(screen_size[0] * 0.4)  # Logo lebih kecil untuk tata letak samping
+        logo_height = int(logo_width * (self.logo.get_height() / self.logo.get_width()))
+        self.logo = pygame.transform.scale(self.logo, (logo_width, logo_height))
+        
+    def update_background(self):
+        """Memperbarui ukuran latar belakang ketika ukuran layar berubah"""
+        screen_size = self.screen.get_size()
+        self.background = pygame.transform.scale(self.original_background, screen_size)
+        
+        # Perbarui juga ukuran logo
+        logo_width = int(screen_size[0] * 0.4)
+        logo_height = int(logo_width * (self.logo.get_height() / self.logo.get_width()))
+        self.logo = pygame.transform.scale(self.logo, (logo_width, logo_height))
+    
+    def draw_start_menu(self):
+        """Menggambar menu awal game dengan logo di sebelah kiri dan opsi menu di sebelah kanan"""
+        screen_width, screen_height = self.screen.get_size()
+        
+        # Menggunakan latar belakang hitam
+        self.screen.fill((0, 0, 0))  # Hitam solid
+        
+        # Bagi layar menjadi dua bagian: kiri untuk logo, kanan untuk menu
+        left_section_width = screen_width // 2
+        right_section_width = screen_width - left_section_width
+        
+        # Tampilkan logo di bagian kiri
+        logo_x = (left_section_width - self.logo.get_width()) // 2
+        logo_y = (screen_height - self.logo.get_height()) // 2
+        self.screen.blit(self.logo, (logo_x, logo_y))
+        
+        # Garis pembatas vertikal
+        pygame.draw.line(self.screen, (0, 200, 200), 
+                        (left_section_width, screen_height // 4), 
+                        (left_section_width, screen_height * 3 // 4), 
+                        2)
+        
+        # Tampilkan judul permainan dengan efek glow di sebelah kanan
+        title_text = "EYELIGHT GAME"
+        title_y = screen_height // 3
+        
+        # Teks utama dengan efek glow
+        for offset in range(3, 0, -1):
+            glow_surface = self.font_large.render(title_text, True, (0, 128, 128))  # Warna cyan gelap
+            glow_x = left_section_width + (right_section_width - glow_surface.get_width()) // 2 + offset
+            glow_y = title_y + offset
+            self.screen.blit(glow_surface, (glow_x, glow_y))
+        
+        # Teks utama
+        title_surface = self.font_large.render(title_text, True, (0, 255, 255))  # Cyan terang
+        title_x = left_section_width + (right_section_width - title_surface.get_width()) // 2
+        self.screen.blit(title_surface, (title_x, title_y))
+        
+        # Tampilkan opsi menu
+        menu_y_start = title_y + title_surface.get_height() + 50
+        menu_spacing = 60
+        
+        for i, option in enumerate(self.gsm.menu_options):
+            # Warna dan ukuran font berbeda untuk opsi yang dipilih
+            if i == self.gsm.selected_option:
+                color = (0, 255, 255)  # Cyan untuk opsi yang dipilih
+                font = self.font_large
+                
+                # Gambar indikator pilihan (ikon mata)
+                eye_radius = 10
+                eye_x = left_section_width + right_section_width // 4
+                eye_y = menu_y_start + (i * menu_spacing) + 15
+                
+                # Gambar mata (lingkaran luar)
+                pygame.draw.circle(self.screen, color, (eye_x, eye_y), eye_radius, 2)
+                # Gambar pupil (lingkaran dalam)
+                pygame.draw.circle(self.screen, color, (eye_x, eye_y), eye_radius // 2)
+                
+                # Tambahkan efek glow
+                for offset in range(2, 0, -1):
+                    glow_surface = font.render(option, True, (0, 128, 128))
+                    glow_x = left_section_width + (right_section_width - glow_surface.get_width()) // 2 + offset
+                    glow_y = menu_y_start + (i * menu_spacing) + offset
+                    self.screen.blit(glow_surface, (glow_x, glow_y))
+            else:
+                color = (128, 128, 128)  # Abu-abu untuk opsi lain
+                font = self.font_medium
+            
+            # Render teks opsi
+            option_surface = font.render(option, True, color)
+            option_x = left_section_width + (right_section_width - option_surface.get_width()) // 2
+            option_y = menu_y_start + (i * menu_spacing)
+            self.screen.blit(option_surface, (option_x, option_y))
+        
+        # Tambahkan instruksi di bagian bawah
+        instructions_text = "Gunakan PANAH ATAS/BAWAH untuk memilih, ENTER untuk mengonfirmasi"
+        instructions_surface = self.font_small.render(instructions_text, True, (150, 150, 150))
+        instructions_x = (screen_width - instructions_surface.get_width()) // 2
+        instructions_y = screen_height - 50
+        self.screen.blit(instructions_surface, (instructions_x, instructions_y))
+        
+        # Tambahkan dekorasi visual (lingkaran kecil di sudut layar)
+        for i in range(8):
+            radius = 3 + (i % 3) * 2
+            pos_x = 20 + (i * 20)
+            pos_y = screen_height - 20
+            pygame.draw.circle(self.screen, (0, 100 + (i * 20), 100 + (i * 20)), (pos_x, pos_y), radius)
+            pygame.draw.circle(self.screen, (0, 100 + (i * 20), 100 + (i * 20)), (screen_width - pos_x, pos_y), radius)
+        
+        # Memperbarui tampilan
+        pygame.display.flip()
     def draw_game_elements(self, webcam_surface=None, eyes_open=False, left_ear=0, right_ear=0):
         """Menggambar semua elemen permainan pada layar Pygame"""
+        # Jika dalam menu awal, tampilkan menu dan berhenti
+        if self.gsm.current_state == self.gsm.STATES['START_MENU']:
+            self.draw_start_menu()
+            return
+        # Jika dalam layar cara bermain, tampilkan instruksi dan berhenti
+        elif self.gsm.current_state == self.gsm.STATES['HOW_TO_PLAY']:
+            self.draw_how_to_play()
+            return
+            
         # Gambar latar belakang terlebih dahulu
         self.screen.blit(self.background, (0, 0))
         
@@ -224,3 +339,91 @@ class UIRenderer:
             instructions_text = self.font_medium.render(instructions, True, (255, 255, 255))
             self.screen.blit(instructions_text, (screen_width // 2 - instructions_text.get_width() // 2, 
                                                  screen_height // 2 + 50))
+    
+    def draw_how_to_play(self):
+        """Menggambar layar instruksi cara bermain"""
+        screen_width, screen_height = self.screen.get_size()
+        
+        # Menggunakan latar belakang hitam
+        self.screen.fill((0, 0, 50))  # Biru gelap
+        
+        # Judul layar
+        title_text = "CARA BERMAIN"
+        title_y = 50
+        
+        # Teks judul dengan efek glow
+        for offset in range(3, 0, -1):
+            glow_surface = self.font_large.render(title_text, True, (0, 128, 128))  # Warna cyan gelap
+            glow_x = (screen_width - glow_surface.get_width()) // 2 + offset
+            glow_y = title_y + offset
+            self.screen.blit(glow_surface, (glow_x, glow_y))
+        
+        # Teks judul utama
+        title_surface = self.font_large.render(title_text, True, (0, 255, 255))  # Cyan terang
+        title_x = (screen_width - title_surface.get_width()) // 2
+        self.screen.blit(title_surface, (title_x, title_y))
+        
+        # Instruksi permainan
+        instructions = [
+            "Eyelight adalah permainan yang diinspirasi oleh \"Red Light, Green Light\".",
+            "Pemain menggunakan mata mereka untuk mengontrol permainan:",
+            "",
+            "1. LAMPU HIJAU - Buka mata Anda untuk bergerak maju.",
+            "   • Musik akan diputar menandakan periode lampu hijau.",
+            "   • Semakin lama mata Anda terbuka, semakin jauh Anda akan bergerak.",
+            "",
+            "2. LAMPU MERAH - Tutup mata Anda saat musik berhenti!",
+            "   • Anda memiliki waktu singkat (1 detik) untuk menutup mata.",
+            "   • Jika mata Anda terbuka saat lampu merah, Anda kalah.",
+            "",
+            "3. TUJUAN - Mencapai garis finish (100%) sebelum tertangkap.",
+            "",
+            "4. KONTROL:",
+            "   • Panah ATAS/BAWAH : Navigasi menu",
+            "   • ENTER : Pilih opsi menu",
+            "   • SPASI : Restart setelah menang/kalah",
+            "   • ESC : Kembali ke menu / Keluar permainan"
+        ]
+        
+        # Menggambar instruksi
+        y_pos = title_y + title_surface.get_height() + 40
+        line_spacing = 26
+        
+        for line in instructions:
+            # Perbedaan format untuk judul dan poin utama
+            if line.startswith("1.") or line.startswith("2.") or line.startswith("3.") or line.startswith("4."):
+                text_surface = self.font_medium.render(line, True, (255, 255, 100))  # Kuning untuk poin utama
+            elif line == "":
+                y_pos += 10  # Spasi tambahan untuk baris kosong
+                continue
+            else:
+                text_surface = self.font_small.render(line, True, (200, 200, 200))  # Abu-abu untuk detail
+            
+            x_pos = (screen_width - text_surface.get_width()) // 2
+            self.screen.blit(text_surface, (x_pos, y_pos))
+            y_pos += line_spacing
+        
+        # Dekorasi visual - mata di pojok-pojok layar
+        eye_radius = 15
+        # Kiri atas
+        pygame.draw.circle(self.screen, (0, 200, 200), (eye_radius + 10, eye_radius + 10), eye_radius, 2)
+        pygame.draw.circle(self.screen, (0, 200, 200), (eye_radius + 10, eye_radius + 10), eye_radius // 2)
+        # Kanan atas
+        pygame.draw.circle(self.screen, (0, 200, 200), (screen_width - eye_radius - 10, eye_radius + 10), eye_radius, 2)
+        pygame.draw.circle(self.screen, (0, 200, 200), (screen_width - eye_radius - 10, eye_radius + 10), eye_radius // 2)
+        # Kiri bawah
+        pygame.draw.circle(self.screen, (0, 200, 200), (eye_radius + 10, screen_height - eye_radius - 10), eye_radius, 2)
+        pygame.draw.circle(self.screen, (0, 200, 200), (eye_radius + 10, screen_height - eye_radius - 10), eye_radius // 2)
+        # Kanan bawah
+        pygame.draw.circle(self.screen, (0, 200, 200), (screen_width - eye_radius - 10, screen_height - eye_radius - 10), eye_radius, 2)
+        pygame.draw.circle(self.screen, (0, 200, 200), (screen_width - eye_radius - 10, screen_height - eye_radius - 10), eye_radius // 2)
+        
+        # Instruksi untuk kembali
+        back_text = "Tekan ENTER atau ESC untuk kembali ke menu"
+        back_surface = self.font_medium.render(back_text, True, (150, 150, 150))
+        back_x = (screen_width - back_surface.get_width()) // 2
+        back_y = screen_height - 50
+        self.screen.blit(back_surface, (back_x, back_y))
+        
+        # Memperbarui tampilan
+        pygame.display.flip()

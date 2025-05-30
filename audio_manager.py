@@ -10,7 +10,8 @@ class AudioManager:
         # Memuat file audio
         self.song = pygame.mixer.Sound('assets/sound/song.mp3')
         self.win_sound = pygame.mixer.Sound('assets/sound/win.mp3')
-        
+        self.lose_sound = pygame.mixer.Sound('assets/sound/lose.mp3')
+
         # Pelacakan status audio
         self.is_playing = False
         self.reset()
@@ -35,6 +36,11 @@ class AudioManager:
         self.stop_music()  # Menghentikan musik yang sedang diputar
         self.win_sound.play()
     
+    def play_lose_sound(self):
+        """Memutar suara kekalahan"""
+        self.stop_music()
+        self.lose_sound.play()
+
     def check_music_status(self):
         """Memeriksa apakah musik masih diputar"""
         if self.is_playing and not pygame.mixer.get_busy():

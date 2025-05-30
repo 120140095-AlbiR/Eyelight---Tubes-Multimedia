@@ -5,6 +5,7 @@ class GameStateManager:
     def __init__(self, audio_manager):
         # Mendefinisikan status permainan
         self.STATES = {
+            'START_MENU': -1,  # Status menu awal
             'WAITING': 0,
             'GREEN_LIGHT': 1,
             'GRACE_PERIOD': 2,
@@ -12,7 +13,7 @@ class GameStateManager:
             'GAME_OVER': 4,
             'WIN': 5
         }
-        self.current_state = self.STATES['WAITING']
+        self.current_state = self.STATES['START_MENU']  # Mulai dengan menu awal
         self.state_start_time = time.time()
         
         # Pengaturan waktu permainan (dalam detik)
@@ -23,6 +24,12 @@ class GameStateManager:
         
         # Menyimpan referensi audio manager
         self.audio_manager = audio_manager
+          # Opsi menu
+        self.menu_options = ["Mulai Permainan", "Cara Bermain", "Keluar"]
+        self.selected_option = 0
+        
+        # Status tambahan untuk menu cara bermain
+        self.STATES['HOW_TO_PLAY'] = -2  # Status menampilkan cara bermain
         
         # Kemajuan pemain
         self.player_position = 0
@@ -48,6 +55,10 @@ class GameStateManager:
     
     def update_state(self, current_time):
         """Memperbarui status permainan berdasarkan timer dan status musik"""
+        # Jika di menu awal, tidak perlu memperbarui status permainan
+        if self.current_state == self.STATES['START_MENU']:
+            return
+        
         # Mendapatkan waktu yang berlalu sejak status saat ini dimulai
         elapsed_time = current_time - self.state_start_time
         
@@ -61,7 +72,7 @@ class GameStateManager:
                 
         elif self.current_state == self.STATES['GREEN_LIGHT']:
             # Secara acak menghentikan musik (sekitar 0.95% kemungkinan per frame - sekitar 25% per detik pada 30fps)
-            if self.audio_manager.is_playing and random.random() < 0.0095:
+            if self.audio_manager.is_playing and random.random() < 0.005:
                 print("Musik berhenti secara acak di tengah pemutaran!")
                 self.stop_current_music()
             
@@ -91,6 +102,7 @@ class GameStateManager:
         if self.current_state == self.STATES['RED_LIGHT'] and eyes_open:
             print("Pelanggaran terdeteksi! Mata terbuka saat lampu merah.")
             self.current_state = self.STATES['GAME_OVER']
+            self.audio_manager.play_lose_sound()
             return True
         return False
     
@@ -113,6 +125,35 @@ class GameStateManager:
     
     def reset(self):
         """Mengatur ulang status permainan ke nilai awal"""
+        self.current_state = self.STATES['START_MENU']  # Kembali ke menu awal
+        self.state_start_time = time.time()
+        self.player_position = 0
+        
+    def start_game(self):
+        """Memulai permainan dari menu awal"""
         self.current_state = self.STATES['WAITING']
         self.state_start_time = time.time()
         self.player_position = 0
+    
+    def select_menu_option(self, direction):
+        """Memilih opsi menu (naik/turun)"""
+        if self.current_state == self.STATES['START_MENU']:
+            if direction == "up" and self.selected_option > 0:
+                self.selected_option -= 1
+            elif direction == "down" and self.selected_option < len(self.menu_options) - 1:
+                self.selected_option += 1
+    def activate_selected_option(self):
+        """Mengaktifkan opsi menu yang dipilih"""
+        if self.current_state == self.STATES['START_MENU']:
+            if self.selected_option == 0:  # Mulai Permainan
+                return "start_game"
+            elif self.selected_option == 1:  # Cara Bermain
+                self.current_state = self.STATES['HOW_TO_PLAY']
+                return "how_to_play"
+            elif self.selected_option == 2:  # Keluar
+                return "exit"
+        elif self.current_state == self.STATES['HOW_TO_PLAY']:
+            # Kembali ke menu utama ketika tombol ditekan di layar cara bermain
+            self.current_state = self.STATES['START_MENU']
+            return "back_to_menu"
+        return None
