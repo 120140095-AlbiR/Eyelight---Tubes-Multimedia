@@ -51,6 +51,10 @@ Eyelight adalah game yang terinspirasi dari permainan Red Light, Green Light nam
 
 ## Dokumentasi
 - Main menu
-![image info](./dokumentasi/1-startmenu.png)
+![image info](./dokumentasi/1-start_menu.png)
 - How to play
+![image info](./dokumentasi/3-how_to_playpng)
 - In-game
+![image info](./dokumentasi/2-green_light.png)
+![image info](./dokumentasi/2-grace_period.png)
+![image info](./dokumentasi/2-red_light.png)
