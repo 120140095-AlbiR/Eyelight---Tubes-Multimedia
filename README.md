@@ -1,4 +1,5 @@
 # Eyelight---Tubes-Multimedia
+![image info](./assets/image/logo.png)
 ## Deskripsi Project
 Eyelight adalah game yang terinspirasi dari permainan Red Light, Green Light namun menggunakan deteksi mata sebagai penentu pergerakan pemain. Saat lampu merah (red light), pemain harus menutup mata unntuk berhenti bergerak. Lalu, saat lampu hijau aktif, pemain boleh membuka mata untuk bergerak maju. Game menggunakan kamera/webcam untuk mendeteksi apakah mata pemain terbuka atau tertutup secara real-time. Suara (sound cue) juga digunakan untuk memberi tahu pemain kapan boleh membuka mata (saat green light) dan kapan harus menutup mata (saat red light). Jika pemain membuka mata saat lampu merah, mereka dinyatakan kalah dan posisi direset ke tempat awal.
 
