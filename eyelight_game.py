@@ -1,4 +1,3 @@
-# filepath: c:\Users\4lb17\Documents\buat kuliah\Sistem teknologi multimedia\tubes\Eyelight test 1\eyelight_game.py
 import pygame
 from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_SPACE, K_UP, K_DOWN, K_RETURN, RESIZABLE, VIDEORESIZE
 import cv2
@@ -12,12 +11,13 @@ from game_states import GameStateManager
 from ui_renderer import UIRenderer
 
 class EyelightGame:
+    """Main class dari the Eyelight Game, berfungsi untuk inisialisasi dan game loop"""
     def __init__(self, screen_width=800, screen_height=600):
-        # Menginisialisasi Pygame dan mixer
+        # Inisialisasi Pygame dan mixer
         pygame.init()
         pygame.mixer.init()
         
-        # Siapkan jendela permainan yang dapat diubah ukurannya
+        # Menyiapkan jendela permainan resizable
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.screen = pygame.display.set_mode((screen_width, screen_height), RESIZABLE)
@@ -26,10 +26,10 @@ class EyelightGame:
         # Inisialisasi webcam
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
-            print("Kesalahan: Tidak dapat mengakses webcam!")
+            print("Error: Tidak dapat mengakses webcam!")
             sys.exit(1)
         
-        # Inisialisasi modul permainan
+        # Inisialisasi module permainan
         self.audio_manager = AudioManager()
         self.game_state_manager = GameStateManager(self.audio_manager)
         self.eye_detector = EyeDetector()
@@ -37,12 +37,12 @@ class EyelightGame:
         
         # Variabel status permainan
         self.running = True
+        self.win = False
         
-        print("Memulai Eyelight Game - Tekan ESC untuk keluar, SPASI untuk mengulang")
+        print("Memulai Eyelight Game...")
     
     def run(self):
-        """Menjalankan loop utama permainan"""
-        
+        """Menjalankan game loop"""
         # Loop utama permainan
         while self.running:
             # Menangani event
@@ -54,13 +54,13 @@ class EyelightGame:
                         if self.game_state_manager.current_state == self.game_state_manager.STATES['START_MENU']:
                             self.running = False  # Keluar jika di menu awal
                         elif self.game_state_manager.current_state == self.game_state_manager.STATES['HOW_TO_PLAY']:
-                            # Kembali ke menu utama jika di layar cara bermain
+                            # Kembali ke menu utama jika di layar how to play
                             self.game_state_manager.current_state = self.game_state_manager.STATES['START_MENU']
                         else:
                             self.reset_game()  # Kembali ke menu jika dalam permainan
                     elif event.key == K_SPACE and (self.game_state_manager.current_state == self.game_state_manager.STATES['GAME_OVER'] or 
                                                   self.game_state_manager.current_state == self.game_state_manager.STATES['WIN']):
-                        self.reset_game()
+                        self.game_state_manager.start_game()
                     # Navigasi menu
                     elif self.game_state_manager.current_state == self.game_state_manager.STATES['START_MENU']:
                         if event.key == K_UP:
@@ -77,22 +77,22 @@ class EyelightGame:
                             elif action == "exit":
                                 self.running = False
                                 print("Keluar dari permainan...")
-                    # Kembali dari layar cara bermain
+                    # Kembali dari layar how to play
                     elif self.game_state_manager.current_state == self.game_state_manager.STATES['HOW_TO_PLAY']:
                         if event.key == K_RETURN:
                             self.game_state_manager.current_state = self.game_state_manager.STATES['START_MENU']
                             print("Kembali ke menu utama...")
                 elif event.type == VIDEORESIZE:
-                    # Memperbarui ukuran layar ketika pengguna mengubah ukuran jendela
+                    # Memperbarui ukuran layar ketika pengguna mengubah ukuran window
                     self.screen_width, self.screen_height = event.size
                     self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), RESIZABLE)
                     # Memperbarui background pada UI renderer
                     self.ui_renderer.update_background()
             
-            # Mendapatkan waktu saat ini untuk manajemen status
+            # Mendapatkan waktu saat ini
             current_time = time.time()
             
-            # Memproses frame webcam untuk mendeteksi mata
+            # Memproses frame webcam untuk deteksi mata
             webcam_surface, eyes_open, left_ear, right_ear = self.eye_detector.detect_eyes(self.cap)
             
             # Memperbarui status permainan berdasarkan timer
@@ -109,7 +109,8 @@ class EyelightGame:
             self.game_state_manager.check_violations(eyes_open)
             
             # Memeriksa kondisi menang
-            self.game_state_manager.check_win_condition()
+            if self.win == False:
+                self.win = self.game_state_manager.check_win_condition()
             
             # Render elemen permainan ke layar
             self.ui_renderer.draw_game_elements(webcam_surface, eyes_open, left_ear, right_ear)
@@ -121,12 +122,12 @@ class EyelightGame:
         self.cleanup()
     
     def reset_game(self):
-        """Mengatur ulang permainan ke status awal"""
+        """Mereset permainan ke status awal"""
         self.game_state_manager.reset()
         self.audio_manager.stop_music()
     
     def cleanup(self):
-        """Membersihkan sumber daya dan keluar dengan rapi"""
+        """Membersihkan resource dan keluar dari game"""
         # Hentikan musik dan suara
         self.audio_manager.stop_music()
         
@@ -137,7 +138,7 @@ class EyelightGame:
         
         # Tutup Pygame
         pygame.quit()
-        print("Game bersih ditutup!")
+        print("Game ditutup!")
 
 if __name__ == "__main__":
     game = EyelightGame()

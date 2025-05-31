@@ -54,7 +54,7 @@ class EyeDetector:
         return ear
     
     def distance(self, point1, point2):
-        """Menghitung jarak Euclidean antara dua titik"""
+        """Menghitung Euclidean distance antara dua titik"""
         return np.sqrt((point1.x - point2.x)**2 + (point1.y - point2.y)**2)
     
     def is_eyes_open(self, left_ear, right_ear, threshold=0.3):

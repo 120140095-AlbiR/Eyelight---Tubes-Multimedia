@@ -3,7 +3,7 @@ import random
 
 class AudioManager:
     def __init__(self):
-        """Menangani pemutaran audio untuk permainan"""
+        """Menangani pemutaran audio dalam game"""
         # Inisialisasi audio
         pygame.mixer.init()
         
@@ -12,7 +12,7 @@ class AudioManager:
         self.win_sound = pygame.mixer.Sound('assets/sound/win.mp3')
         self.lose_sound = pygame.mixer.Sound('assets/sound/lose.mp3')
 
-        # Pelacakan status audio
+        # Status audio
         self.is_playing = False
         self.reset()
     
@@ -32,24 +32,19 @@ class AudioManager:
         self.is_playing = False
     
     def play_win_sound(self):
-        """Memutar suara kemenangan"""
+        """Memutar win sound"""
         self.stop_music()  # Menghentikan musik yang sedang diputar
         self.win_sound.play()
     
     def play_lose_sound(self):
-        """Memutar suara kekalahan"""
+        """Memutar lose sound"""
         self.stop_music()
         self.lose_sound.play()
 
     def check_music_status(self):
         """Memeriksa apakah musik masih diputar"""
         if self.is_playing and not pygame.mixer.get_busy():
-            # Musik baru saja berhenti secara alami
             self.is_playing = False
-            print("Lagu selesai secara alami")
-            return True  # Musik baru saja berhenti
+            print("Musik selesai diputar")
+            return True  # Musik berhenti
         return False  # Tidak ada perubahan status musik
-    
-    def should_continue_playing(self):
-        """Selalu lanjutkan memutar lagu"""
-        return True

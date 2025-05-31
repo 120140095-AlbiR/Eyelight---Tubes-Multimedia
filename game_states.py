@@ -5,7 +5,7 @@ class GameStateManager:
     def __init__(self, audio_manager):
         # Mendefinisikan status permainan
         self.STATES = {
-            'START_MENU': -1,  # Status menu awal
+            'START_MENU': -1,  
             'WAITING': 0,
             'GREEN_LIGHT': 1,
             'GRACE_PERIOD': 2,
@@ -17,15 +17,15 @@ class GameStateManager:
         self.state_start_time = time.time()
         
         # Pengaturan waktu permainan (dalam detik)
-        self.green_light_duration = 5.0  # Durasi lampu hijau (akan diganti oleh musik)
-        self.red_light_duration = 3.0    # Durasi lampu merah
+        self.green_light_duration = 5.0  # Durasi green light (akan diganti oleh musik)
+        self.red_light_duration = 3.0    # Durasi red light
         self.countdown_duration = 3.0    # Durasi hitung mundur awal
         self.grace_period_duration = 1.0  # Periode tenggang setelah musik berhenti
         
         # Menyimpan referensi audio manager
         self.audio_manager = audio_manager
           # Opsi menu
-        self.menu_options = ["Mulai Permainan", "Cara Bermain", "Keluar"]
+        self.menu_options = ["Start Game", "How to Play", "Exit"]
         self.selected_option = 0
         
         # Status tambahan untuk menu cara bermain
@@ -41,12 +41,11 @@ class GameStateManager:
         for name, value in self.STATES.items():
             if value == state:
                 return name
-        return "TIDAK DIKENAL"
+        return "UNKNOWN"
     
     def stop_current_music(self):
-        """Paksa menghentikan musik yang sedang diputar dan memicu periode tenggang"""
+        """Paksa menghentikan musik yang sedang diputar dan memicu grace period"""
         if self.current_state == self.STATES['GREEN_LIGHT'] and self.audio_manager.is_playing:
-            print("Memaksa musik berhenti lebih awal")
             self.audio_manager.stop_music()
             self.current_state = self.STATES['GRACE_PERIOD']
             self.state_start_time = time.time()
@@ -73,7 +72,7 @@ class GameStateManager:
         elif self.current_state == self.STATES['GREEN_LIGHT']:
             # Secara acak menghentikan musik (sekitar 0.95% kemungkinan per frame - sekitar 25% per detik pada 30fps)
             if self.audio_manager.is_playing and random.random() < 0.005:
-                print("Musik berhenti secara acak di tengah pemutaran!")
+                print("Musik berhenti secara random saat diputar!")
                 self.stop_current_music()
             
             # Memeriksa apakah musik telah berhenti secara alami
@@ -89,18 +88,18 @@ class GameStateManager:
                 self.state_start_time = current_time
                 
         elif self.current_state == self.STATES['RED_LIGHT']:
-            # Dalam status lampu merah, beralih ke lampu hijau setelah durasi tertentu
+            # Dalam status red light, beralih ke green light setelah durasi tertentu
             if elapsed_time >= self.red_light_duration:
                 self.current_state = self.STATES['GREEN_LIGHT']
                 self.state_start_time = current_time
-                # Cukup mulai musik untuk setiap status lampu hijau
+                # Mulai musik untuk setiap status green light
                 self.audio_manager.start_music()
     
     def check_violations(self, eyes_open):
         """Memeriksa pelanggaran aturan berdasarkan status permainan"""
-        # Selama lampu merah, mata terbuka adalah pelanggaran
+        # Selama red light, mata terbuka adalah pelanggaran
         if self.current_state == self.STATES['RED_LIGHT'] and eyes_open:
-            print("Pelanggaran terdeteksi! Mata terbuka saat lampu merah.")
+            print("Pelanggaran terdeteksi! Mata terbuka saat red light.")
             self.current_state = self.STATES['GAME_OVER']
             self.audio_manager.play_lose_sound()
             return True
@@ -109,7 +108,7 @@ class GameStateManager:
     def check_win_condition(self):
         """Memeriksa apakah pemain telah mencapai garis finish"""
         if self.player_position >= self.finish_line:
-            print("Pemain telah mencapai garis finish! KEMENANGAN!")
+            print("Pemain telah mencapai garis finish!")
             self.current_state = self.STATES['WIN']
             self.audio_manager.play_win_sound()
             return True

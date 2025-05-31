@@ -55,7 +55,7 @@ class UIRenderer:
                         2)
         
         # Tampilkan judul permainan dengan efek glow di sebelah kanan
-        title_text = "EYELIGHT GAME"
+        title_text = "MAIN MENU"
         title_y = screen_height // 3
         
         # Teks utama dengan efek glow
@@ -82,7 +82,7 @@ class UIRenderer:
                 
                 # Gambar indikator pilihan (ikon mata)
                 eye_radius = 10
-                eye_x = left_section_width + right_section_width // 4
+                eye_x = left_section_width + right_section_width // 5
                 eye_y = menu_y_start + (i * menu_spacing) + 15
                 
                 # Gambar mata (lingkaran luar)
@@ -107,7 +107,7 @@ class UIRenderer:
             self.screen.blit(option_surface, (option_x, option_y))
         
         # Tambahkan instruksi di bagian bawah
-        instructions_text = "Gunakan PANAH ATAS/BAWAH untuk memilih, ENTER untuk mengonfirmasi"
+        instructions_text = "Gunakan tombol ATAS/BAWAH untuk navigasi, ENTER untuk memilih menu"
         instructions_surface = self.font_small.render(instructions_text, True, (150, 150, 150))
         instructions_x = (screen_width - instructions_surface.get_width()) // 2
         instructions_y = screen_height - 50
@@ -184,7 +184,7 @@ class UIRenderer:
         bar_width = screen_width - 100
         bar_height = 20
         bar_x = 50
-        bar_y = screen_height - 50
+        bar_y = screen_height - 100
         
         # Menggambar bar kemajuan kosong
         pygame.draw.rect(self.screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height))
@@ -229,9 +229,9 @@ class UIRenderer:
                                             screen_height // 2 - text_surface.get_height() // 2))
             
         elif self.gsm.current_state == self.gsm.STATES['GREEN_LIGHT']:
-            # Status lampu hijau
-            state_text = "LAMPU HIJAU!"
-            instruction_text = "(Buka mata Anda untuk bergerak)"
+            # Status green light
+            state_text = "GREEN LIGHT!"
+            instruction_text = "(Buka mata untuk bergerak)"
             
             # Overlay hijau semi-transparan jika mata terbuka
             if eyes_open:
@@ -248,14 +248,14 @@ class UIRenderer:
             
             # Menampilkan indikator musik sedang diputar
             if self.gsm.audio_manager.is_playing:
-                music_text = "♪ Musik Diputar ♪"
+                music_text = "< Musik Diputar >"
                 music_surface = self.font_medium.render(music_text, True, (0, 255, 255))
                 self.screen.blit(music_surface, (20, 250))
             
         elif self.gsm.current_state == self.gsm.STATES['GRACE_PERIOD']:
-            # Status periode tenggang
+            # Status periode jeda
             state_text = "MUSIK BERHENTI!"
-            instruction_text = "Tutup mata Anda SEKARANG! (periode tenggang 1 detik)"
+            instruction_text = "Tutup mata SEKARANG! (Jeda 1 detik)"
             
             # Overlay kuning semi-transparan
             overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
@@ -274,15 +274,15 @@ class UIRenderer:
             # Menampilkan hitung mundur periode tenggang
             elapsed_time = time.time() - self.gsm.state_start_time
             remaining = max(0, self.gsm.grace_period_duration - elapsed_time)
-            timer_text = f"Waktu tersisa: {remaining:.1f}d"
+            timer_text = f"Waktu tersisa: {remaining:.1f}"
             timer_surface = self.font_medium.render(timer_text, True, (255, 255, 0))
             self.screen.blit(timer_surface, (screen_width // 2 - timer_surface.get_width() // 2, 
                                              screen_height // 3 + 120))
             
         elif self.gsm.current_state == self.gsm.STATES['RED_LIGHT']:
-            # Status lampu merah
-            state_text = "LAMPU MERAH!"
-            instruction_text = "(Tetap tutup mata Anda!)"
+            # Status red light
+            state_text = "RED LIGHT!"
+            instruction_text = "(Tetap tutup mata!)"
             
             # Overlay merah semi-transparan jika mata terbuka (pelanggaran)
             if eyes_open:
@@ -300,7 +300,7 @@ class UIRenderer:
             # Tampilan timer
             elapsed_time = time.time() - self.gsm.state_start_time
             remaining = max(0, self.gsm.red_light_duration - elapsed_time)
-            timer_text = f"Waktu: {remaining:.1f}d"
+            timer_text = f"Waktu: {remaining:.1f}"
             timer_surface = self.font_medium.render(timer_text, True, (255, 0, 0))
             self.screen.blit(timer_surface, (20, 250))
             
@@ -310,14 +310,14 @@ class UIRenderer:
             overlay.fill((100, 0, 0, 180))  # Merah dengan alpha
             self.screen.blit(overlay, (0, 0))
             
-            # Menampilkan teks permainan berakhir
-            state_text = "PERMAINAN BERAKHIR!"
+            # Menampilkan teks permainan berakhir/pemain kalah
+            state_text = "YOU LOSE!"
             text_surface = self.font_large.render(state_text, True, (255, 0, 0))
             self.screen.blit(text_surface, (screen_width // 2 - text_surface.get_width() // 2, 
                                             screen_height // 2 - text_surface.get_height() // 2 - 50))
             
             # Menampilkan instruksi restart
-            instructions = "Tekan SPASI untuk memulai ulang permainan"
+            instructions = "Tekan SPACE untuk restart | Tekan ESC untuk kembali ke menu"
             instructions_text = self.font_medium.render(instructions, True, (255, 255, 255))
             self.screen.blit(instructions_text, (screen_width // 2 - instructions_text.get_width() // 2, 
                                                  screen_height // 2 + 50))
@@ -329,13 +329,13 @@ class UIRenderer:
             self.screen.blit(overlay, (0, 0))
             
             # Menampilkan teks kemenangan
-            state_text = "ANDA MENANG!"
+            state_text = "YOU WIN!"
             text_surface = self.font_large.render(state_text, True, (0, 255, 0))
             self.screen.blit(text_surface, (screen_width // 2 - text_surface.get_width() // 2, 
                                             screen_height // 2 - text_surface.get_height() // 2 - 50))
             
             # Menampilkan instruksi restart
-            instructions = "Tekan SPASI untuk bermain lagi"
+            instructions = "Tekan SPACE untuk restart | Tekan ESC untuk kembali ke menu"
             instructions_text = self.font_medium.render(instructions, True, (255, 255, 255))
             self.screen.blit(instructions_text, (screen_width // 2 - instructions_text.get_width() // 2, 
                                                  screen_height // 2 + 50))
@@ -348,7 +348,7 @@ class UIRenderer:
         self.screen.fill((0, 0, 50))  # Biru gelap
         
         # Judul layar
-        title_text = "CARA BERMAIN"
+        title_text = "HOW TO PLAY"
         title_y = 50
         
         # Teks judul dengan efek glow
@@ -368,20 +368,20 @@ class UIRenderer:
             "Eyelight adalah permainan yang diinspirasi oleh \"Red Light, Green Light\".",
             "Pemain menggunakan mata mereka untuk mengontrol permainan:",
             "",
-            "1. LAMPU HIJAU - Buka mata Anda untuk bergerak maju.",
-            "   • Musik akan diputar menandakan periode lampu hijau.",
-            "   • Semakin lama mata Anda terbuka, semakin jauh Anda akan bergerak.",
+            "1. GREEN LIGHT - Buka mata untuk bergerak maju.",
+            "   • Musik akan diputar menandakan periode green light.",
+            "   • Semakin lama mata pemain terbuka, semakin jauh pemain bergerak.",
             "",
-            "2. LAMPU MERAH - Tutup mata Anda saat musik berhenti!",
-            "   • Anda memiliki waktu singkat (1 detik) untuk menutup mata.",
-            "   • Jika mata Anda terbuka saat lampu merah, Anda kalah.",
+            "2. RED LIGHT - Tutup mata saat musik berhenti.",
+            "   • Pemain memiliki waktu singkat (1 detik) untuk menutup mata.",
+            "   • Jika mata pemain terdeteksi terbuka saat red light, Pemain dinyatakan kalah.",
             "",
-            "3. TUJUAN - Mencapai garis finish (100%) sebelum tertangkap.",
+            "3. TUJUAN - Mencapai garis finish (100%).",
             "",
-            "4. KONTROL:",
+            "4. KONTROL GAME (KEYBOARD):",
             "   • Panah ATAS/BAWAH : Navigasi menu",
-            "   • ENTER : Pilih opsi menu",
-            "   • SPASI : Restart setelah menang/kalah",
+            "   • ENTER : Pilih menu",
+            "   • SPACE : Restart setelah menang/kalah",
             "   • ESC : Kembali ke menu / Keluar permainan"
         ]
         
