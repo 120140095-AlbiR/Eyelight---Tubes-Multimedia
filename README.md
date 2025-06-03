@@ -43,7 +43,7 @@ Eyelight adalah game yang terinspirasi dari permainan Red Light, Green Light nam
 - Webcam
 ### Cara instalasi 
 - Download repositori github https://github.com/120140095-AlbiR/Eyelight---Tubes-Multimedia
-- Jalankan command pip install requirements.txt untuk menginstall module yang diperlukan
+- Jalankan command pip install -r requirements.txt untuk menginstall module yang diperlukan
 ### Cara menggunakan program
 - Buka folder Eyelight---Tubes-Multimedia-main pada VSCode atau terminal
 - Jalankan command python eyelight_game.py
@@ -58,3 +58,6 @@ Eyelight adalah game yang terinspirasi dari permainan Red Light, Green Light nam
 ![image info](./dokumentasi/2-green_light.png)
 ![image info](./dokumentasi/2-grace_period.png)
 ![image info](./dokumentasi/2-red_light.png)
+
+## Demo Program
+https://drive.google.com/file/d/1A_2ig0nLN6zf901gowZgxOv2nfDFsI7X/view?usp=drive_link
